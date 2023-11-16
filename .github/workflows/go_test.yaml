@@ -1,0 +1,55 @@
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
+name: Go Test
+on:
+  push:
+    branches-ignore:
+      - temp
+  pull_request:
+    branches-ignore:
+      - temp
+defaults:
+  run:
+    # 指如果run的這些屬性沒有設定的時候，其預設值改為我們這裡所設定的數值
+    working-directory: ./src  # 這不適用在使用套件(uses)的情況下
+    shell: pwsh # default shell used on Windows
+jobs:
+  test:
+    strategy:
+      matrix:
+        # [ubuntu-latest, macos-latest, windows-latest]
+        platform: [ windows-latest ]
+        go-version: [ 1.21.x ]
+    runs-on: ${{ matrix.platform }}
+    name: Integration tests
+    steps:
+      - name: Check out code into the Go module directory. # 先checkout，這樣才會有go.sum檔案，才有辦法確認是否要用cache
+        uses: actions/checkout@v3
+      - name: Install Go.
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+          check-latest: true # 如果指定的go-version不是最新的，會去下載最新的go版本, 預設為false
+          cache-dependency-path: src/go.sum # go.mod如果不在根目錄，可以運用此參數來調整
+          cache: true # 用go.sum來決定是否要在setupGo # 根路徑一定要存在go.mod, go.sum兩個檔案，不然會出現錯誤: Error: Some specified paths were not resolved, unable to cache dependencies.
+          # cache-dependency-path: # 有多個相依文件才需考慮
+
+      - name: go mod tidy
+        run: go mod tidy
+
+      #- name: test "algorithms"
+      #  run: go test ./algorithms
+
+      #- name: test "challenges"
+      #  run: go test ./challenges -v
+
+      - name: test All
+        run: go test -v -coverpkg=./... -coverprofile="coverage.txt" ./...
+
+      - name: Cover Func
+        run: go tool cover -func="coverage.txt"
+
+      - name: Upload coverage file
+        uses: actions/upload-artifact@v3 # 它的path吃的是根路徑，與defaults.run.working-directory無關
+        with:
+          name: coverage-artifact # 表示輸出的zip檔案名稱，zip當中的各個檔案名稱不會更動 # go tool cover -html="coverage.txt"
+          path: ./src/coverage.txt # coverage.txt
