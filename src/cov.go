@@ -3,6 +3,8 @@
 //go:generate go test -v -coverpkg=./... -coverprofile=coverage.txt ./...
 // //go:generate go test -v -coverpkg=./... -coverprofile=coverage.txt ./algorithms/search/binary_search/exercise1/ //<-- 指測試某一個目錄
 //go:generate go tool cover -func=coverage.txt
+
+// go tool cover -html="coverage.txt" // <-- 如果用cmd，要加上"
 //go:generate go tool cover -html=coverage.txt
 //go:generate powershell -Command Remove-Item coverage.txt
 
